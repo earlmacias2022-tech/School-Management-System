@@ -1,9 +1,8 @@
 export default {
   content: [
-    "./*.php",
     "./**/*.php",
     "./**/*.html",
-    "./**/*.js",
+    "./**/*.js"
   ],
   theme: {
     extend: {},

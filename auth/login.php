@@ -218,7 +218,7 @@ include '../config/db.php';
 
             <!-- Back to Home -->
             <div class="text-center mt-4 animate-fade-in-up animate-delay-300">
-                <a href="../landing.php" class="inline-flex items-center gap-2 text-slate-500 hover:text-slate-700 text-sm transition-colors">
+                <a href="../index.php" class="inline-flex items-center gap-2 text-slate-500 hover:text-slate-700 text-sm transition-colors">
                     <i data-lucide="arrow-left" class="w-4 h-4"></i>
                     Back to Home
                 </a>
