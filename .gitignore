@@ -1,0 +1,30 @@
+# Node modules (Tailwind, npm packages)
+node_modules/
+
+# PHP vendor folder (if using Composer)
+vendor/
+
+# Environment files (database credentials, API keys)
+.env
+
+# Logs and temp files
+*.log
+*.tmp
+
+# XAMPP / system files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Backup files
+*.bak
+*.old
+*.orig
+
+# IDE / editor settings
+.vscode/
+.idea/
+
+# Optional: Mac / Windows system files
+ehthumbs.db
+Icon?
