@@ -20,12 +20,9 @@ $title = "";
 if ($current_page == 'dashboard.php') {
     $title = 'Dashboard Overview';
 } else if ($current_page == 'section.php') {
-    $title = 'Sections';
-}
-?>
-<?php
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
+    $title = 'Section Management';
+} else if ($current_page == 'students.php') {
+    $title = 'Student Management';
 }
 ?>
 
@@ -53,9 +50,9 @@ if (session_status() === PHP_SESSION_NONE) {
             <span class="<?php echo ($current_page == 'section.php') ? 'font-semibold text-blue-600' : 'font-medium'; ?>">Section Management</span>
         </a>
 
-        <a href="../students/list.php" class="flex items-center space-x-3 p-3 rounded-xl transition-all duration-200 group <?php echo getNavClasses('list.php', $current_page); ?>">
-            <i data-lucide="users" class="w-5 h-5 <?php echo ($current_page == 'list.php') ? 'text-blue-600' : 'group-hover:text-blue-600'; ?>"></i>
-            <span class="<?php echo ($current_page == 'list.php') ? 'font-semibold text-blue-600' : 'font-medium'; ?>">Students</span>
+        <a href="../pages/students.php" class="flex items-center space-x-3 p-3 rounded-xl transition-all duration-200 group <?php echo getNavClasses('students.php', $current_page); ?>">
+            <i data-lucide="users" class="w-5 h-5 <?php echo ($current_page == 'students.php') ? 'text-blue-600' : 'group-hover:text-blue-600'; ?>"></i>
+            <span class="<?php echo ($current_page == 'students.php') ? 'font-semibold text-blue-600' : 'font-medium'; ?>">Students</span>
         </a>
 
         <a href="../attendance/view.php" class="flex items-center space-x-3 p-3 rounded-xl transition-all duration-200 group <?php echo getNavClasses('view.php', $current_page); ?>">
@@ -110,4 +107,40 @@ if (session_status() === PHP_SESSION_NONE) {
         </div>
     </div>
 </div>
+
+<!-- logout Modal -->
+<div id="logoutmodal" class="fixed inset-0 bg-slate-900/50 z-60 hidden items-center justify-center backdrop-blur-sm p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 overflow-hidden animate-fade-in-up text-center">
+        <div class="mx-auto flex items-center justify-center h-14 w-14 rounded-full bg-gradient-to-br from-red-100 to-red-200 mb-4">
+            <i data-lucide="alert-triangle" class="h-6 w-6 text-red-600"></i>
+        </div>
+
+        <h3 class="text-xl font-bold text-slate-900 mb-2">Are you sure?</h3>
+        <p class="text-slate-500 mb-6 text-sm">You want to logout.</p>
+
+        <div class="flex justify-center gap-3">
+            <a href="../auth/logout.php">
+                <button class=" bg-red-500 hover:bg-red-600 text-white font-semibold px-6 py-2.5 rounded-xl transition shadow-lg shadow-red-200">
+                    Yes, logout
+                </button>
+            </a>
+            <button type="button" onclick="closeLogoutModal()" class=" bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold  px-6   py-2.5 rounded-xl transition">
+                Cancel
+            </button>
+        </div>
+    </div>
+</div>
 <script src="../assets/js/modal.js"></script>
+<script>
+    function closeLogoutModal() {
+        const modal = document.getElementById('logoutmodal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+
+    function openLogoutModal() {
+        const modal = document.getElementById('logoutmodal');
+        modal.classList.add('flex');
+        modal.classList.remove('hidden');
+    }
+</script>

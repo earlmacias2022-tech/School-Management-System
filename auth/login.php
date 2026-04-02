@@ -272,6 +272,7 @@ include '../config/db.php';
                 $_SESSION['username'] = $user['username'];
                 $_SESSION['fullname'] = $user['fullname'];
                 $_SESSION['email'] = $user['email'];
+
                 echo "<script>window.location='../pages/dashboard.php';</script>";
             } else {
                 echo "<script>showToast('Wrong password','error');</script>";

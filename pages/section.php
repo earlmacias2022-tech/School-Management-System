@@ -1,6 +1,6 @@
 <?php
 include '../config/db.php';
-
+include '../config/auth.php';
 // --- INSERT LOGIC ---
 if (isset($_POST['action_type']) && $_POST['action_type'] == 'create') {
     $name = $_POST['sec_name'];
@@ -854,7 +854,7 @@ $result = mysqli_query($conn, $query);
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden animate-fade-in-up flex flex-col">
 
             <!-- Modal Header -->
-            <div class="bg-gradient-to-r from-purple-600 to-indigo-500 p-5 text-white flex justify-between items-center flex-shrink-0">
+            <div class="bg-gradient-to-r  from-blue-500 to-cyan-500  p-5 text-white flex justify-between items-center flex-shrink-0">
                 <h3 class="font-bold flex items-center gap-2 text-lg">
                     <i data-lucide="users" class="w-5 h-5"></i>
                     <span>Student Management</span>
@@ -877,7 +877,7 @@ $result = mysqli_query($conn, $query);
             <!-- Action Buttons Bar -->
             <div class="px-5 py-3 border-b border-slate-200 bg-slate-50 flex flex-wrap gap-3 items-center flex-shrink-0">
                 <button onclick="showAddStudentForm()"
-                    class="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-500 hover:from-purple-500 hover:to-indigo-400 text-white font-semibold rounded-xl shadow-sm hover:shadow transition-all flex items-center gap-2 text-sm">
+                    class="px-4 py-2 bg-gradient-to-r  from-blue-500 to-cyan-500  hover:from-purple-500 hover:to-indigo-400 text-white font-semibold rounded-xl shadow-sm hover:shadow transition-all flex items-center gap-2 text-sm">
                     <i data-lucide="plus-circle" class="w-4 h-4"></i> Add Manually
                 </button>
                 <button onclick="switchStudentTab('import')"
@@ -928,7 +928,7 @@ $result = mysqli_query($conn, $query);
                         </div>
                         <h3 class="text-lg font-bold text-slate-700 mb-2">No students in this section yet</h3>
                         <p class="text-slate-500 mb-6 max-w-sm mx-auto">Start by adding students manually or import from an Excel file.</p>
-                        <button onclick="showAddStudentForm()" class="px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-500 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all">
+                        <button onclick="showAddStudentForm()" class="px-6 py-3 bg-gradient-to-r  from-blue-500 to-cyan-500  text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all">
                             <i data-lucide="plus-circle" class="w-4 h-4 inline mr-2"></i> Add First Student
                         </button>
                     </div>
@@ -1128,7 +1128,7 @@ $result = mysqli_query($conn, $query);
                             </button>
                             <button type="submit"
                                 id="formSubmitBtn"
-                                class="px-6 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-500 hover:from-purple-500 hover:to-indigo-400 text-white font-bold rounded-xl shadow-lg shadow-purple-200 hover:shadow-purple-300 transition-all flex items-center gap-2">
+                                class="px-6 py-2.5 bg-gradient-to-r  from-blue-500 to-cyan-500  hover:from-purple-500 hover:to-indigo-400 text-white font-bold rounded-xl shadow-lg shadow-purple-200 hover:shadow-purple-300 transition-all flex items-center gap-2">
                                 <i data-lucide="save" class="w-4 h-4"></i>
                                 <span>Add Student</span>
                             </button>
@@ -1206,7 +1206,7 @@ $result = mysqli_query($conn, $query);
                         <!-- Upload Button -->
                         <div class="pt-4">
                             <button type="submit"
-                                class="w-full py-3 px-4 bg-gradient-to-r from-purple-600 to-indigo-500 hover:from-purple-500 hover:to-indigo-400 text-white font-bold rounded-xl shadow-lg shadow-purple-200 hover:shadow-purple-300 transition-all flex items-center justify-center gap-2">
+                                class="w-full py-3 px-4 bg-gradient-to-r  from-blue-500 to-cyan-500  hover:from-purple-500 hover:to-indigo-400 text-white font-bold rounded-xl shadow-lg shadow-purple-200 hover:shadow-purple-300 transition-all flex items-center justify-center gap-2">
                                 <i data-lucide="file-up" class="w-5 h-5"></i>
                                 <span>Import Students</span>
                             </button>
@@ -1223,7 +1223,7 @@ $result = mysqli_query($conn, $query);
          ============================================================ -->
     <div id="moveStudentModal" class="fixed inset-0 bg-slate-900/50 z-[60] hidden items-center justify-center backdrop-blur-sm p-4">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-fade-in-up">
-            <div class="bg-gradient-to-r from-amber-500 to-orange-500 p-5 text-white flex justify-between items-center">
+            <div class="bg-gradient-to-r  from-blue-500 to-cyan-500  p-5 text-white flex justify-between items-center">
                 <h3 class="font-bold flex items-center gap-2 text-lg">
                     <i data-lucide="arrow-right-circle" class="w-5 h-5"></i>
                     <span>Move Student</span>
@@ -1260,7 +1260,7 @@ $result = mysqli_query($conn, $query);
                         Cancel
                     </button>
                     <button type="submit"
-                        class="flex-1 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white font-bold rounded-xl shadow-lg transition-all">
+                        class="flex-1 py-2.5 bg-gradient-to-r  from-blue-500 to-cyan-500  hover:from-amber-400 hover:to-orange-400 text-white font-bold rounded-xl shadow-lg transition-all">
                         Move Student
                     </button>
                 </div>
@@ -1514,7 +1514,7 @@ $result = mysqli_query($conn, $query);
                         </div>
                         <!-- Actions & Expand Icon -->
                         <div class="flex items-center gap-2">
-                            <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-all student-actions" onclick="event.stopPropagation()">
+                            <div class="flex gap-1  group-hover:opacity-100 transition-all student-actions" onclick="event.stopPropagation()">
                                 <button onclick="editStudent(${student.id})"
                                     class="p-2 hover:bg-blue-50 rounded-lg border border-transparent hover:border-blue-100 text-blue-600 transition-all"
                                     title="Edit Student">
@@ -1656,7 +1656,7 @@ $result = mysqli_query($conn, $query);
             if (details.classList.contains('hidden')) {
                 chevron.style.transform = 'rotate(0deg)';
                 actions.classList.remove('opacity-100');
-                actions.classList.add('opacity-0');
+                // actions.classList.add('opacity-0');
             } else {
                 chevron.style.transform = 'rotate(180deg)';
                 actions.classList.remove('opacity-0');

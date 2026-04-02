@@ -1,100 +1,285 @@
 <?php include '../config/db.php'; ?>
 
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
-    <title>Register</title>
-    <link rel="stylesheet" href="../assets/css/style.css">
-    <link rel="stylesheet" href="../assets/css/output.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - ClassOptima</title>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: '#2563eb',
+                        secondary: '#06b6d4',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-fade-in-up {
+            animation: fadeInUp 0.5s ease forwards;
+        }
+
+        .animate-delay-100 {
+            animation-delay: 0.1s;
+        }
+
+        .animate-delay-200 {
+            animation-delay: 0.2s;
+        }
+
+        .animate-delay-300 {
+            animation-delay: 0.3s;
+        }
+
+        .bg-float-1 {
+            position: absolute;
+            top: -20%;
+            right: -10%;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(37, 99, 235, 0.08) 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .bg-float-2 {
+            position: absolute;
+            bottom: -20%;
+            left: -10%;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(6, 182, 212, 0.06) 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .toast {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            padding: 16px 24px;
+            border-radius: 12px;
+            font-weight: 500;
+            font-size: 14px;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.3s ease;
+            z-index: 9999;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .toast.success {
+            background: #ecfdf5;
+            color: #059669;
+            border: 1px solid #a7f3d0;
+        }
+
+        .toast.error {
+            background: #fef2f2;
+            color: #dc2626;
+            border: 1px solid #fecaca;
+        }
+    </style>
 </head>
 
-<body>
+<body class="flex justify-center items-center h-screen w-screen overflow-hidden">
+    <!-- Decorative Background -->
+    <div class="bg-float-1"></div>
+    <div class="bg-float-2"></div>
 
-    <div class=" flex h-screen font-sans bg-gray-50">
+    <div class="w-full max-w-md animate-fade-in-up">
 
-        <div class="w-full md:w-1/2 flex items-center justify-center bg-white p-8 md:p-16">
-            <div class="max-w-md w-full">
-                <h2 class="text-3xl font-bold text-gray-800 mb-2">Create Faculty Account</h2>
-                <p class="text-gray-500 mb-8">Join our academic community and manage your classes easily.</p>
+        <!-- Register Card -->
+        <div class="bg-white rounded-3xl px-12 py-5 shadow-xl shadow-blue-100 border border-blue-50">
 
-                <button class="w-full flex items-center justify-center gap-3 border border-gray-300 py-3 rounded-lg hover:bg-gray-50 transition mb-6">
-                    <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-5 h-5" alt="Google">
-                    <span class="font-medium text-gray-700 text-sm">Register via Gmail</span>
-                </button>
+            <!-- Logo & Header -->
+            <div>
+                <a href="../landing.php" class="inline-flex items-center gap-3 mb-5">
+                    <div class="bg-gradient-to-br from-blue-600 to-cyan-500 p-2 rounded-xl shadow-lg shadow-blue-200">
+                        <i data-lucide="graduation-cap" class="w-5 h-5 text-white"></i>
+                    </div>
+                    <span class="text-1xl font-bold tracking-tight text-slate-800">Class<span class="text-blue-600">Optima</span></span>
+                </a>
+            </div>
+            <div class="text-center mb-10">
+                <h1 class="text-2xl font-bold text-slate-900 mb-2">Create Account</h1>
+                <p class="text-slate-500">Join our academic community to get started</p>
+            </div>
 
-                <div class="relative mb-6 text-center">
-                    <hr class="border-gray-200">
-                    <span class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white px-4 text-xs text-gray-400">or use your details</span>
+            <form method="POST" class="space-y-4">
+                <!-- Full Name -->
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-3">Full Name</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <i data-lucide="user" class="w-5 h-5 text-slate-400"></i>
+                        </div>
+                        <input type="text" name="fullname" placeholder="Enter your full name" required
+                            class="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 transition-all">
+                    </div>
                 </div>
 
-                <form method="POST" class="grid grid-cols-1 gap-4">
+                <!-- Username & Contact Row -->
+                <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <input type="text" name="fullname" placeholder="Full Name" required
-                            class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none transition">
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-4">
-                        <input type="text" name="contact" placeholder="Contact No." required
-                            class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none transition">
-                        <input type="text" name="username" placeholder="Username" required
-                            class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none transition">
-                    </div>
-
-                    <div>
-                        <input type="email" name="email" placeholder="Email Address" required
-                            class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none transition">
+                        <label class="block text-sm font-semibold text-slate-700 mb-3">Username</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                <i data-lucide="at-sign" class="w-5 h-5 text-slate-400"></i>
+                            </div>
+                            <input type="text" name="username" placeholder="Username" required
+                                class="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 transition-all">
+                        </div>
                     </div>
 
                     <div>
-                        <input type="password" name="password" placeholder="Password" required
-                            class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none transition">
+                        <label class="block text-sm font-semibold text-slate-700 mb-3">Contact</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                <i data-lucide="phone" class="w-5 h-5 text-slate-400"></i>
+                            </div>
+                            <input type="text" name="contact" placeholder="Contact No." required
+                                class="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 transition-all">
+                        </div>
                     </div>
+                </div>
 
-                    <button type="submit" name="register"
-                        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg mt-2 transition duration-300 shadow-md">
-                        Complete Registration
-                    </button>
-                </form>
+                <!-- Email -->
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-3">Email Address</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <i data-lucide="mail" class="w-5 h-5 text-slate-400"></i>
+                        </div>
+                        <input type="email" name="email" placeholder="Enter your email" required
+                            class="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 transition-all">
+                    </div>
+                </div>
 
-                <p class="mt-8 text-center text-sm text-gray-600">
-                    Already have an account? <a href="login.php" class="text-blue-600 font-bold hover:underline">Login</a>
-                </p>
+                <!-- Password -->
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-3">Password</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <i data-lucide="lock" class="w-5 h-5 text-slate-400"></i>
+                        </div>
+                        <input type="password" name="password" id="password" placeholder="Create a password" required
+                            class="w-full pl-12 pr-12 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 transition-all">
+                        <button type="button" id="toggle-password" class="absolute inset-y-0 right-0 pr-4 flex items-center cursor-pointer">
+                            <i data-lucide="eye" class="w-5 h-5 text-slate-400 hover:text-slate-600 transition-colors" id="eye-icon"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Register Button -->
+                <button type="submit" name="register"
+                    class="w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-bold rounded-xl shadow-lg shadow-blue-200 hover:shadow-blue-300 hover:-translate-y-0.5 transition-all duration-300 flex items-center justify-center gap-2 text-base">
+                    <i data-lucide="user-plus" class="w-5 h-5"></i>
+                    <span>Create Account</span>
+                </button>
+            </form>
+
+            <!-- Divider -->
+            <div class="relative my-5">
+                <div class="absolute inset-0 flex items-center">
+                    <div class="w-full border-t border-slate-200"></div>
+                </div>
+                <div class="relative flex justify-center">
+                    <span class="px-4 text-sm text-slate-400 bg-white">or continue with</span>
+                </div>
             </div>
-        </div>
 
-        <div class="hidden md:flex w-1/2 bg-blue-600 relative overflow-hidden flex-col items-center justify-center p-25 text-white">
-            <div class="absolute inset-0 opacity-10 pointer-events-none">
-                <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
-                    <circle cx="10" cy="10" r="20" fill="white" />
-                    <circle cx="90" cy="90" r="30" fill="white" />
+            <!-- Social Register -->
+            <button class="w-full py-3 px-4 bg-white border-2 border-slate-200 hover:border-slate-300 rounded-xl text-slate-700 font-semibold transition-all duration-300 flex items-center justify-center gap-3 hover:bg-slate-50">
+                <svg class="w-5 h-5" viewBox="0 0 24 24">
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
                 </svg>
+                <span>Sign up with Google</span>
+            </button>
+
+            <!-- Login Link -->
+            <p class="text-center text-slate-600 text-sm mt-3 animate-fade-in-up animate-delay-200">
+                Already have an account?
+                <a href="login.php" class="font-bold text-blue-600 hover:text-blue-700 transition-colors">Sign In</a>
+            </p>
+
+            <!-- Back to Home -->
+            <div class="text-center mt-4 animate-fade-in-up animate-delay-300">
+                <a href="../index.php" class="inline-flex items-center gap-2 text-slate-500 hover:text-slate-700 text-sm transition-colors">
+                    <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                    Back to Home
+                </a>
             </div>
 
-            <div class="relative z-10 text-center">
-                <h1 class="text-5xl font-extrabold leading-tight mb-4">
-                    Empowering <br><span class="text-yellow-400">Educators</span>
-                </h1>
-                <p class="text-blue-100 text-lg max-w-sm mx-auto mb-10">
-                    Simplify your classroom workflow. Automate attendance, manage grades, and focus on what matters: teaching.
-                </p>
-
-                <img src="https://illustrations.popsy.co/white/web-design.svg"
-                    alt="Teacher Illustration"
-                    class="w-3/4 mx-auto drop-shadow-2xl">
-            </div>
-
-            <div class="absolute bottom-10 flex gap-4 text-xs text-blue-200">
-                <span>© 2024 Attendance Management System</span>
-                <span class="hover:text-white cursor-pointer underline">Terms of Service</span>
-            </div>
         </div>
-
     </div>
 
+    <!-- Toast Notification -->
     <div id="toast" class="toast"></div>
 
-    <script src="../assets/js/toast.js"></script>
+    <script>
+        lucide.createIcons();
+
+        function showToast(message, type) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = 'toast ' + type + ' show';
+            setTimeout(() => {
+                toast.className = 'toast';
+            }, 3000);
+        }
+
+        const togglePassword = document.getElementById('toggle-password');
+        const passwordInput = document.getElementById('password');
+        const eyeIcon = document.getElementById('eye-icon');
+
+        if (togglePassword && passwordInput) {
+            togglePassword.addEventListener('click', () => {
+                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                passwordInput.setAttribute('type', type);
+                eyeIcon.setAttribute('data-lucide', type === 'password' ? 'eye' : 'eye-off');
+                lucide.createIcons();
+            });
+        }
+    </script>
 
     <?php
     if (isset($_POST['register'])) {
@@ -110,20 +295,18 @@
 
         if ($stmt->execute()) {
             echo "<script>
-            showToast('Registered successfully');
-
-            setTimeout(() => {
-                window.location.href = '../auth/login.php';
-            }, 3000);
-        </script>";
+                showToast('Registered successfully!', 'success');
+                setTimeout(() => {
+                    window.location.href = 'login.php';
+                }, 1500);
+            </script>";
         } else {
-            echo "<script>showToast('Error occurred','error');</script>";
+            echo "<script>showToast('Error occurred. Please try again.', 'error');</script>";
         }
 
         $stmt->close();
     }
     ?>
-
 </body>
 
 </html>

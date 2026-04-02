@@ -89,6 +89,7 @@
 
     <?php
     include '../config/db.php';
+    include '../config/auth.php';
     include '../includes/side-top-bar.php';
 
     // Query total sections
