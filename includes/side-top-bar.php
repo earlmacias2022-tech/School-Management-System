@@ -23,6 +23,8 @@ if ($current_page == 'dashboard.php') {
     $title = 'Section Management';
 } else if ($current_page == 'students.php') {
     $title = 'Student Management';
+} else if ($current_page == 'attendance.php') {
+    $title = 'Attendance';
 }
 ?>
 
@@ -55,9 +57,9 @@ if ($current_page == 'dashboard.php') {
             <span class="<?php echo ($current_page == 'students.php') ? 'font-semibold text-blue-600' : 'font-medium'; ?>">Students</span>
         </a>
 
-        <a href="../attendance/view.php" class="flex items-center space-x-3 p-3 rounded-xl transition-all duration-200 group <?php echo getNavClasses('view.php', $current_page); ?>">
-            <i data-lucide="user-check" class="w-5 h-5 <?php echo ($current_page == 'view.php') ? 'text-blue-600' : 'group-hover:text-blue-600'; ?>"></i>
-            <span class="<?php echo ($current_page == 'view.php') ? 'font-semibold text-blue-600' : 'font-medium'; ?>">Attendance</span>
+        <a href="../pages/attendance.php" class="flex items-center space-x-3 p-3 rounded-xl transition-all duration-200 group <?php echo getNavClasses('attendance.php', $current_page); ?>">
+            <i data-lucide="user-check" class="w-5 h-5 <?php echo ($current_page == 'attendance.php') ? 'text-blue-600' : 'group-hover:text-blue-600'; ?>"></i>
+            <span class="<?php echo ($current_page == 'attendance.php') ? 'font-semibold text-blue-600' : 'font-medium'; ?>">Attendance</span>
         </a>
     </nav>
 

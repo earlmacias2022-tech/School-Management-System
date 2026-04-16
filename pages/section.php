@@ -1,6 +1,95 @@
 <?php
 include '../config/db.php';
 include '../config/auth.php';
+
+// ============================================================
+// AJAX SECTION FILTER HANDLER
+// Returns filtered sections HTML without full page reload
+// ============================================================
+if (isset($_GET['ajax_filter']) && $_GET['ajax_filter'] === 'true') {
+    header('Content-Type: text/html');
+
+    $search = $_GET['search'] ?? "";
+    $grade_level = $_GET['grade_level'] ?? "";
+    $school_year = $_GET['school_year'] ?? "";
+    $class_day = $_GET['class_day'] ?? "";
+    $strand = $_GET['strand'] ?? "";
+
+    $query = "SELECT * FROM sections WHERE 1=1";
+    if (!empty($search)) {
+        $escaped = mysqli_real_escape_string($conn, $search);
+        $query .= " AND section_name LIKE '%$escaped%'";
+    }
+    if (!empty($grade_level)) {
+        $escaped = mysqli_real_escape_string($conn, $grade_level);
+        $query .= " AND grade_level = '$escaped'";
+    }
+    if (!empty($school_year)) {
+        $escaped = mysqli_real_escape_string($conn, $school_year);
+        $query .= " AND school_year = '$escaped'";
+    }
+    if (!empty($strand)) {
+        $escaped = mysqli_real_escape_string($conn, $strand);
+        $query .= " AND strand = '$escaped'";
+    }
+    if (!empty($class_day)) {
+        $escaped = mysqli_real_escape_string($conn, $class_day);
+        $query .= " AND FIND_IN_SET('$escaped', class_days)";
+    }
+
+    $query .= " ORDER BY sectionID DESC";
+    $result = mysqli_query($conn, $query);
+
+    if (mysqli_num_rows($result) == 0) {
+        echo '<div class="text-center py-12">
+                <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i data-lucide="folder-open" class="w-8 h-8 text-slate-400"></i>
+                </div>
+                <p class="text-slate-500">No sections found</p>
+            </div>';
+    } else {
+        while ($row = mysqli_fetch_assoc($result)) {
+            echo '<div class="flex items-center justify-between p-4 border border-slate-100 rounded-xl hover:bg-slate-50 hover:border-slate-200 transition-all group cursor-pointer">
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg shadow-blue-200">
+                        <i data-lucide="book-open" class="w-5 h-5 text-white"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-slate-800">' . htmlspecialchars($row['section_name']) . '</h4>
+                        <p class="text-xs text-slate-500">
+                            <span class="font-semibold text-blue-600">' . htmlspecialchars($row['strand']) . ' ' . htmlspecialchars($row['grade_level']) . '</span>
+                            <span class="mx-1">•</span>
+                            ' . htmlspecialchars($row['subject']) . '
+                            <span class="mx-1">•</span>
+                            ' . htmlspecialchars($row['class_days']) . '
+                            <span class="mx-1">•</span>
+                            ' . htmlspecialchars($row['time']) . '
+                        </p>
+                    </div>
+                </div>
+                <div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-all">
+                    <button onclick=\'openEditModal(' . json_encode($row) . ')\' class="p-2.5 hover:bg-blue-50 rounded-xl border border-transparent hover:border-blue-100 text-blue-600 cursor-pointer transition-all">
+                        <i data-lucide="pen" class="w-4 h-4"></i>
+                    </button>
+                    <button onclick=\'openViewModal(' . json_encode($row) . ')\' class="p-2.5 hover:bg-green-50 rounded-xl border border-transparent hover:border-green-100 text-green-600 cursor-pointer transition-all">
+                        <i data-lucide="eye" class="w-4 h-4"></i>
+                    </button>
+                    <button onclick=\'openAddStudentsModal(' . json_encode($row) . ')\' class="p-2.5 hover:bg-blue-50 rounded-xl border border-transparent hover:border-blue-100 text-blue-600 cursor-pointer transition-all" title="Add Students">
+                        <i data-lucide="user-plus" class="w-4 h-4"></i>
+                    </button>
+                    <button onclick="openDeleteModal(' . intval($row['sectionID']) . ')" class="p-2.5 hover:bg-red-50 rounded-xl border border-transparent hover:border-red-100 text-red-500 cursor-pointer transition-all">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>';
+        }
+    }
+
+    // Return total count for the badge
+    echo '<!--TOTAL_COUNT:' . mysqli_num_rows($result) . '-->';
+    exit;
+}
+
 // --- INSERT LOGIC ---
 if (isset($_POST['action_type']) && $_POST['action_type'] == 'create') {
     $name = $_POST['sec_name'];
@@ -22,7 +111,7 @@ if (isset($_POST['action_type']) && $_POST['action_type'] == 'create') {
         mysqli_stmt_bind_param($stmt, "ssssssss", $name, $subject, $location, $time, $school_year, $grade_level, $strand, $days_string);
 
         if (mysqli_stmt_execute($stmt)) {
-            echo "<script>showToast('Section created successfully');</script>";
+            echo "<script>showToast('Section created successfully'); if(typeof fetchSections==='function') fetchSections();</script>";
         } else {
             echo "Error: " . mysqli_error($conn);
         }
@@ -49,8 +138,10 @@ if (isset($_POST['action_type']) && $_POST['action_type'] == 'update') {
 
     $stmt = mysqli_prepare($conn, $query);
     mysqli_stmt_bind_param($stmt, "ssssssssi", $name, $subject, $location, $time, $school_year, $grade_level, $strand, $days_string, $id);
-    mysqli_stmt_execute($stmt);
-    $sections = mysqli_query($conn, "SELECT * FROM sections ORDER BY sectionID DESC");
+    if (mysqli_stmt_execute($stmt)) {
+        echo "<script>showToast('Section updated successfully'); if(typeof fetchSections==='function') fetchSections();</script>";
+    }
+    mysqli_stmt_close($stmt);
 }
 
 // Delete Logic
@@ -59,10 +150,9 @@ if (isset($_POST['action']) && $_POST['action'] == 'delete_section') {
     $stmt = mysqli_prepare($conn, "DELETE FROM sections WHERE sectionID = ?");
     mysqli_stmt_bind_param($stmt, "i", $id_to_delete);
     if (mysqli_stmt_execute($stmt)) {
-        echo "<script>showToast('Section deleted successfully');</script>";
+        echo "<script>showToast('Section deleted successfully'); if(typeof fetchSections==='function') fetchSections();</script>";
     }
     mysqli_stmt_close($stmt);
-    $sections = mysqli_query($conn, "SELECT * FROM sections ORDER BY sectionID DESC");
 }
 
 // ============================================================
@@ -594,44 +684,44 @@ $result = mysqli_query($conn, $query);
         </div>
 
         <!-- Filters -->
-        <form method="GET" class="bg-white rounded-2xl p-5 shadow-lg shadow-blue-100/50 border border-blue-50 mb-6 animate-fade-in-up animate-delay-100">
+        <div class="bg-white rounded-2xl p-5 shadow-lg shadow-blue-100/50 border border-blue-50 mb-6 animate-fade-in-up animate-delay-100">
             <div class="flex flex-wrap gap-4 items-center">
                 <!-- Grade Level -->
-                <select name="grade_level" onchange="this.form.submit()"
+                <select id="filter_grade_level"
                     class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-medium text-slate-700 cursor-pointer outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 transition-all">
-                    <option value="" <?= ($_GET['grade_level'] ?? '') == '' ? 'selected' : '' ?>>Grade Level</option>
-                    <option value="Grade 11" <?= ($_GET['grade_level'] ?? '') == 'Grade 11' ? 'selected' : '' ?>>Grade 11</option>
-                    <option value="Grade 12" <?= ($_GET['grade_level'] ?? '') == 'Grade 12' ? 'selected' : '' ?>>Grade 12</option>
+                    <option value="">Grade Level</option>
+                    <option value="Grade 11">Grade 11</option>
+                    <option value="Grade 12">Grade 12</option>
                 </select>
 
                 <!-- School Year -->
-                <select name="school_year" onchange="this.form.submit()"
+                <select id="filter_school_year"
                     class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-medium text-slate-700 cursor-pointer outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 transition-all">
-                    <option value="" <?= ($_GET['school_year'] ?? '') == '' ? 'selected' : '' ?>>School Year</option>
-                    <option value="2025-2026" <?= ($_GET['school_year'] ?? '') == '2025-2026' ? 'selected' : '' ?>>2025-2026</option>
-                    <option value="2026-2027" <?= ($_GET['school_year'] ?? '') == '2026-2027' ? 'selected' : '' ?>>2026-2027</option>
+                    <option value="">School Year</option>
+                    <option value="2025-2026">2025-2026</option>
+                    <option value="2026-2027">2026-2027</option>
                 </select>
 
                 <!-- Class Day -->
-                <select name="class_day" onchange="this.form.submit()"
+                <select id="filter_class_day"
                     class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-medium text-slate-700 cursor-pointer outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 transition-all">
-                    <option value="" <?= ($_GET['class_day'] ?? '') == '' ? 'selected' : '' ?>>Class Day</option>
-                    <option value="M" <?= ($_GET['class_day'] ?? '') == 'M' ? 'selected' : '' ?>>Monday</option>
-                    <option value="T" <?= ($_GET['class_day'] ?? '') == 'T' ? 'selected' : '' ?>>Tuesday</option>
-                    <option value="W" <?= ($_GET['class_day'] ?? '') == 'W' ? 'selected' : '' ?>>Wednesday</option>
-                    <option value="TH" <?= ($_GET['class_day'] ?? '') == 'TH' ? 'selected' : '' ?>>Thursday</option>
-                    <option value="F" <?= ($_GET['class_day'] ?? '') == 'F' ? 'selected' : '' ?>>Friday</option>
+                    <option value="">Class Day</option>
+                    <option value="M">Monday</option>
+                    <option value="T">Tuesday</option>
+                    <option value="W">Wednesday</option>
+                    <option value="TH">Thursday</option>
+                    <option value="F">Friday</option>
                 </select>
 
                 <!-- Strand -->
-                <select name="strand" onchange="this.form.submit()"
+                <select id="filter_strand"
                     class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-medium text-slate-700 cursor-pointer outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 transition-all">
-                    <option value="" <?= ($_GET['strand'] ?? '') == '' ? 'selected' : '' ?>>Strand</option>
-                    <option value="TVL" <?= ($_GET['strand'] ?? '') == 'TVL' ? 'selected' : '' ?>>TVL</option>
-                    <option value="STEM" <?= ($_GET['strand'] ?? '') == 'STEM' ? 'selected' : '' ?>>STEM</option>
-                    <option value="ABM" <?= ($_GET['strand'] ?? '') == 'ABM' ? 'selected' : '' ?>>ABM</option>
-                    <option value="HUMMS" <?= ($_GET['strand'] ?? '') == 'HUMMS' ? 'selected' : '' ?>>HUMMS</option>
-                    <option value="GAS" <?= ($_GET['strand'] ?? '') == 'GAS' ? 'selected' : '' ?>>GAS</option>
+                    <option value="">Strand</option>
+                    <option value="TVL">TVL</option>
+                    <option value="STEM">STEM</option>
+                    <option value="ABM">ABM</option>
+                    <option value="HUMMS">HUMMS</option>
+                    <option value="GAS">GAS</option>
                 </select>
 
                 <!-- Search -->
@@ -639,72 +729,31 @@ $result = mysqli_query($conn, $query);
                     <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                         <i data-lucide="search" class="w-4 h-4 text-slate-400"></i>
                     </div>
-
-                    <input type="text" name="search" id="search"
+                    <input type="text" id="filter_search"
                         class="w-full pl-11 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 placeholder-slate-400 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 transition-all"
-                        placeholder="Search sections here..."
-                        value="<?= $_GET['search'] ?? '' ?>"
-                        onkeyup="setTimeout(() => this.form.submit(), 1500)">
+                        placeholder="Search sections here...">
                 </div>
+
+                <!-- Reset Button -->
+                <button onclick="resetFilters()"
+                    class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-medium rounded-xl transition-all text-sm flex items-center gap-2">
+                    <i data-lucide="x-circle" class="w-4 h-4"></i>
+                    Reset
+                </button>
             </div>
-        </form>
+        </div>
 
         <!-- Sections List -->
         <div class="bg-white rounded-2xl shadow-lg shadow-blue-100/50 border border-blue-50 overflow-hidden animate-fade-in-up animate-delay-200">
             <div class="p-5 border-b border-slate-100 flex justify-between items-center">
                 <h2 class="font-bold text-slate-800 text-lg">Sections List</h2>
                 <div class="flex items-center gap-2">
-                    <span class="px-3 py-1 bg-blue-100 text-blue-700 text-xs font-semibold rounded-full"><?php echo mysqli_num_rows($result); ?> Total</span>
+                    <span id="totalCount" class="px-3 py-1 bg-blue-100 text-blue-700 text-xs font-semibold rounded-full"><?php echo mysqli_num_rows($result); ?> Total</span>
                 </div>
             </div>
-            <div class="p-4 space-y-3 max-h-82 overflow-y-auto">
-                <?php if (mysqli_num_rows($result) == 0): ?>
-                    <div class="text-center py-12">
-                        <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <i data-lucide="folder-open" class="w-8 h-8 text-slate-400"></i>
-                        </div>
-                        <p class="text-slate-500">No sections found</p>
-                    </div>
-                <?php else: ?>
-                    <?php while ($row = mysqli_fetch_assoc($result)): ?>
-                        <div class="flex items-center justify-between p-4 border border-slate-100 rounded-xl hover:bg-slate-50 hover:border-slate-200 transition-all group cursor-pointer">
-                            <div class="flex items-center gap-4">
-                                <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg shadow-blue-200">
-                                    <i data-lucide="book-open" class="w-5 h-5 text-white"></i>
-                                </div>
-                                <div>
-                                    <h4 class="font-bold text-slate-800"><?php echo $row['section_name']; ?></h4>
-                                    <p class="text-xs text-slate-500">
-                                        <span class="font-semibold text-blue-600"><?php echo $row['strand']; ?> <?php echo $row['grade_level']; ?></span>
-                                        <span class="mx-1">•</span>
-                                        <?php echo $row['subject']; ?>
-                                        <span class="mx-1">•</span>
-                                        <?php echo $row['class_days']; ?>
-                                        <span class="mx-1">•</span>
-                                        <?php echo $row['time']; ?>
-                                    </p>
-                                </div>
-                            </div>
-                            <div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-all">
-                                <button onclick='openEditModal(<?php echo json_encode($row); ?>)' class="p-2.5 hover:bg-blue-50 rounded-xl border border-transparent hover:border-blue-100 text-blue-600 cursor-pointer transition-all">
-                                    <i data-lucide="pen" class="w-4 h-4"></i>
-                                </button>
-                                <button onclick='openViewModal(<?php echo json_encode($row); ?>)' class="p-2.5 hover:bg-green-50 rounded-xl border border-transparent hover:border-green-100 text-green-600 cursor-pointer transition-all">
-                                    <i data-lucide="eye" class="w-4 h-4"></i>
-                                </button>
-                                <!-- ADD STUDENTS BUTTON -->
-                                <button onclick='openAddStudentsModal(<?php echo json_encode($row); ?>)' class="p-2.5 hover:bg-purple-50 rounded-xl border border-transparent hover:border-purple-100 text-purple-600 cursor-pointer transition-all" title="Add Students">
-                                    <i data-lucide="user-plus" class="w-4 h-4"></i>
-                                </button>
-                                <button onclick="openDeleteModal(<?php echo $row['sectionID']; ?>)" class="p-2.5 hover:bg-red-50 rounded-xl border border-transparent hover:border-red-100 text-red-500 cursor-pointer transition-all">
-                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
-                                </button>
-                            </div>
-                        </div>
-                    <?php endwhile; ?>
-                <?php endif; ?>
+            <div id="sectionsContainer" class="p-4 space-y-3 max-h-82 overflow-y-auto">
+                <!-- Sections loaded via AJAX -->
             </div>
-        </div>
     </main>
 
     <!-- Add/Edit Modal -->
@@ -760,6 +809,10 @@ $result = mysqli_query($conn, $query);
                             <select name="sec_grade"
                                 class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-700 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 transition-all cursor-pointer">
                                 <option>-- Select --</option>
+                                <option>Grade 7</option>
+                                <option>Grade 8</option>
+                                <option>Grade 9</option>
+                                <option>Grade 10</option>
                                 <option>Grade 11</option>
                                 <option>Grade 12</option>
                             </select>
@@ -865,23 +918,23 @@ $result = mysqli_query($conn, $query);
             </div>
 
             <!-- Section Context Banner -->
-            <div class="bg-purple-50 border-b border-purple-100 px-5 py-3 flex-shrink-0">
-                <p class="text-sm text-purple-700">
+            <div class="bg-blue-50 border-b border-blue-100 px-5 py-3 flex-shrink-0">
+                <p class="text-sm text-blue-700">
                     <i data-lucide="book-open" class="w-4 h-4 inline mr-1"></i>
                     Section: <span id="selectedSectionName" class="font-bold">Section Name</span>
                     <span class="mx-2">•</span>
-                    <span id="studentCount" class="text-purple-600 font-medium">0 students</span>
+                    <span id="studentCount" class="text-blue-600 font-medium">0 students</span>
                 </p>
             </div>
 
             <!-- Action Buttons Bar -->
             <div class="px-5 py-3 border-b border-slate-200 bg-slate-50 flex flex-wrap gap-3 items-center flex-shrink-0">
                 <button onclick="showAddStudentForm()"
-                    class="px-4 py-2 bg-gradient-to-r  from-blue-500 to-cyan-500  hover:from-purple-500 hover:to-indigo-400 text-white font-semibold rounded-xl shadow-sm hover:shadow transition-all flex items-center gap-2 text-sm">
+                    class="px-4 py-2 bg-gradient-to-r  from-blue-500 to-cyan-500  hover:from-blue-500 hover:to-cyan-400 text-white font-semibold rounded-xl shadow-sm hover:shadow transition-all flex items-center gap-2 text-sm">
                     <i data-lucide="plus-circle" class="w-4 h-4"></i> Add Manually
                 </button>
                 <button onclick="switchStudentTab('import')"
-                    class="px-4 py-2 bg-white border border-slate-200 hover:border-purple-300 hover:bg-purple-50 text-slate-700 font-semibold rounded-xl shadow-sm transition-all flex items-center gap-2 text-sm">
+                    class="px-4 py-2 bg-white border border-slate-200 hover:border-blue-300 hover:bg-blue-50 text-slate-700 font-semibold rounded-xl shadow-sm transition-all flex items-center gap-2 text-sm">
                     <i data-lucide="file-up" class="w-4 h-4"></i> Import Excel
                 </button>
                 <button onclick="exportStudents()"
@@ -893,7 +946,7 @@ $result = mysqli_query($conn, $query);
                 <div class="relative">
                     <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
                     <input type="text" id="searchStudents" placeholder="Search students..."
-                        class="pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 outline-none transition-all w-48"
+                        class="pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all w-48"
                         oninput="filterStudents(this.value)">
                 </div>
             </div>
@@ -923,8 +976,8 @@ $result = mysqli_query($conn, $query);
                 <div id="studentListSection">
                     <!-- Empty State -->
                     <div id="emptyStudentsState" class="hidden text-center py-16">
-                        <div class="w-20 h-20 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <i data-lucide="users" class="w-10 h-10 text-purple-400"></i>
+                        <div class="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i data-lucide="users" class="w-10 h-10 text-blue-400"></i>
                         </div>
                         <h3 class="text-lg font-bold text-slate-700 mb-2">No students in this section yet</h3>
                         <p class="text-slate-500 mb-6 max-w-sm mx-auto">Start by adding students manually or import from an Excel file.</p>
@@ -950,8 +1003,8 @@ $result = mysqli_query($conn, $query);
                         <input type="hidden" name="edit_student_id" id="edit_student_id">
 
                         <!-- Section Context in Form -->
-                        <div class="bg-purple-50 border border-purple-200 rounded-xl p-4">
-                            <p class="text-sm text-purple-700">
+                        <div class="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                            <p class="text-sm text-blue-700">
                                 <i data-lucide="info" class="w-4 h-4 inline mr-1"></i>
                                 Adding students to: <span id="formSectionName" class="font-bold"></span>
                             </p>
@@ -970,25 +1023,25 @@ $result = mysqli_query($conn, $query);
                                         <label class="text-sm font-semibold text-slate-700 mb-2 block">Legal Name <span class="text-red-500">*</span></label>
                                         <input type="text" name="legal_name" id="legal_name" required
                                             placeholder="Complete legal name"
-                                            class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all">
+                                            class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all">
                                     </div>
                                     <div>
                                         <label class="text-sm font-semibold text-slate-700 mb-2 block">Preferred Name</label>
                                         <input type="text" name="preferred_name" id="preferred_name"
                                             placeholder="Nickname or preferred name"
-                                            class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all">
+                                            class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all">
                                     </div>
                                 </div>
                                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                                     <div>
                                         <label class="text-sm font-semibold text-slate-700 mb-2 block">Date of Birth <span class="text-red-500">*</span></label>
                                         <input type="date" name="dob" id="dob" required
-                                            class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all">
+                                            class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all">
                                     </div>
                                     <div>
                                         <label class="text-sm font-semibold text-slate-700 mb-2 block">Gender <span class="text-red-500">*</span></label>
                                         <select name="gender" id="gender" required
-                                            class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all cursor-pointer">
+                                            class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all cursor-pointer">
                                             <option value="">Select Gender</option>
                                             <option value="Male">Male</option>
                                             <option value="Female">Female</option>
@@ -998,7 +1051,7 @@ $result = mysqli_query($conn, $query);
                                         <label class="text-sm font-semibold text-slate-700 mb-2 block">Student ID</label>
                                         <input type="text" name="student_id" id="student_id"
                                             placeholder="School ID number"
-                                            class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all">
+                                            class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all">
                                     </div>
                                 </div>
                             </div>
@@ -1016,20 +1069,20 @@ $result = mysqli_query($conn, $query);
                                     <label class="text-sm font-semibold text-slate-700 mb-2 block">Home Address</label>
                                     <input type="text" name="address" id="address"
                                         placeholder="Complete home address"
-                                        class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all">
+                                        class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all">
                                 </div>
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
                                         <label class="text-sm font-semibold text-slate-700 mb-2 block">Phone Number</label>
                                         <input type="text" name="phone" id="phone"
                                             placeholder="Contact number"
-                                            class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all">
+                                            class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all">
                                     </div>
                                     <div>
                                         <label class="text-sm font-semibold text-slate-700 mb-2 block">Email Address</label>
                                         <input type="email" name="email" id="email"
                                             placeholder="student@email.com"
-                                            class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all">
+                                            class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all">
                                     </div>
                                 </div>
                             </div>
@@ -1047,13 +1100,13 @@ $result = mysqli_query($conn, $query);
                                     <label class="text-sm font-semibold text-slate-700 mb-2 block">Parent/Guardian Contacts</label>
                                     <textarea name="parent_contacts" id="parent_contacts" rows="2"
                                         placeholder="Names and contact numbers of parents/guardians"
-                                        class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all resize-none"></textarea>
+                                        class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all resize-none"></textarea>
                                 </div>
                                 <div>
                                     <label class="text-sm font-semibold text-slate-700 mb-2 block">Emergency Contact</label>
                                     <textarea name="emergency_contacts" id="emergency_contacts" rows="2"
                                         placeholder="Secondary emergency contacts"
-                                        class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all resize-none"></textarea>
+                                        class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all resize-none"></textarea>
                                 </div>
                             </div>
                         </div>
@@ -1070,20 +1123,20 @@ $result = mysqli_query($conn, $query);
                                     <label class="text-sm font-semibold text-slate-700 mb-2 block">Allergies</label>
                                     <input type="text" name="allergies" id="allergies"
                                         placeholder="Food, medicine, or environmental allergies"
-                                        class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all">
+                                        class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all">
                                 </div>
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
                                         <label class="text-sm font-semibold text-slate-700 mb-2 block">Chronic Conditions</label>
                                         <input type="text" name="chronic_issues" id="chronic_issues"
                                             placeholder="Asthma, diabetes, etc."
-                                            class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all">
+                                            class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all">
                                     </div>
                                     <div>
                                         <label class="text-sm font-semibold text-slate-700 mb-2 block">Dietary Restrictions</label>
                                         <input type="text" name="dietary_restrictions" id="dietary_restrictions"
                                             placeholder="Vegetarian, halal, etc."
-                                            class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all">
+                                            class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all">
                                     </div>
                                 </div>
                             </div>
@@ -1101,20 +1154,20 @@ $result = mysqli_query($conn, $query);
                                     <label class="text-sm font-semibold text-slate-700 mb-2 block">Previous School</label>
                                     <input type="text" name="previous_school" id="previous_school"
                                         placeholder="Name of previously enrolled school"
-                                        class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all">
+                                        class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all">
                                 </div>
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
                                         <label class="text-sm font-semibold text-slate-700 mb-2 block">Current Grade Level</label>
                                         <input type="text" name="grade_level" id="grade_level"
                                             placeholder="Grade 11 or Year 1"
-                                            class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all">
+                                            class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all">
                                     </div>
                                     <div>
                                         <label class="text-sm font-semibold text-slate-700 mb-2 block">Academic Interests</label>
                                         <input type="text" name="interests" id="interests"
                                             placeholder="Favorite subjects or areas of interest"
-                                            class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all">
+                                            class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all">
                                     </div>
                                 </div>
                             </div>
@@ -1128,7 +1181,7 @@ $result = mysqli_query($conn, $query);
                             </button>
                             <button type="submit"
                                 id="formSubmitBtn"
-                                class="px-6 py-2.5 bg-gradient-to-r  from-blue-500 to-cyan-500  hover:from-purple-500 hover:to-indigo-400 text-white font-bold rounded-xl shadow-lg shadow-purple-200 hover:shadow-purple-300 transition-all flex items-center gap-2">
+                                class="px-6 py-2.5 bg-gradient-to-r  from-blue-500 to-cyan-500  hover:from-blue-500 hover:to-cyan-400 text-white font-bold rounded-xl shadow-lg shadow-blue-200 hover:shadow-blue-300 transition-all flex items-center gap-2">
                                 <i data-lucide="save" class="w-4 h-4"></i>
                                 <span>Add Student</span>
                             </button>
@@ -1186,9 +1239,9 @@ $result = mysqli_query($conn, $query);
                                     class="hidden"
                                     onchange="updateFileName(this)">
                                 <label for="excel_file"
-                                    class="flex items-center justify-center gap-4 w-full py-10 px-4 bg-slate-50 border-2 border-dashed border-slate-300 rounded-xl cursor-pointer hover:border-purple-400 hover:bg-purple-50/30 transition-all group">
-                                    <div class="p-4 bg-slate-100 rounded-xl group-hover:bg-purple-100 transition-colors">
-                                        <i data-lucide="upload-cloud" class="w-8 h-8 text-slate-500 group-hover:text-purple-600"></i>
+                                    class="flex items-center justify-center gap-4 w-full py-10 px-4 bg-slate-50 border-2 border-dashed border-slate-300 rounded-xl cursor-pointer hover:border-blue-400 hover:bg-blue-50/30 transition-all group">
+                                    <div class="p-4 bg-slate-100 rounded-xl group-hover:bg-blue-100 transition-colors">
+                                        <i data-lucide="upload-cloud" class="w-8 h-8 text-slate-500 group-hover:text-blue-600"></i>
                                     </div>
                                     <div class="text-left">
                                         <p class="text-base font-semibold text-slate-700">Click to upload or drag file here</p>
@@ -1206,7 +1259,7 @@ $result = mysqli_query($conn, $query);
                         <!-- Upload Button -->
                         <div class="pt-4">
                             <button type="submit"
-                                class="w-full py-3 px-4 bg-gradient-to-r  from-blue-500 to-cyan-500  hover:from-purple-500 hover:to-indigo-400 text-white font-bold rounded-xl shadow-lg shadow-purple-200 hover:shadow-purple-300 transition-all flex items-center justify-center gap-2">
+                                class="w-full py-3 px-4 bg-gradient-to-r  from-blue-500 to-cyan-500  hover:from-blue-500 hover:to-cyan-400 text-white font-bold rounded-xl shadow-lg shadow-blue-200 hover:shadow-blue-300 transition-all flex items-center justify-center gap-2">
                                 <i data-lucide="file-up" class="w-5 h-5"></i>
                                 <span>Import Students</span>
                             </button>
@@ -1303,6 +1356,85 @@ $result = mysqli_query($conn, $query);
                 toast.className = 'toast';
             }, 3000);
         }
+
+        // ============================================================
+        // AJAX SECTION FILTERING
+        // ============================================================
+        let filterTimeout = null;
+
+        function fetchSections() {
+            const search = document.getElementById('filter_search').value;
+            const grade_level = document.getElementById('filter_grade_level').value;
+            const school_year = document.getElementById('filter_school_year').value;
+            const class_day = document.getElementById('filter_class_day').value;
+            const strand = document.getElementById('filter_strand').value;
+
+            const params = new URLSearchParams({
+                ajax_filter: 'true',
+                search: search,
+                grade_level: grade_level,
+                school_year: school_year,
+                class_day: class_day,
+                strand: strand
+            });
+
+            fetch('section.php?' + params.toString())
+                .then(response => response.text())
+                .then(html => {
+                    // Extract total count from the marker
+                    const countMatch = html.match(/<!--TOTAL_COUNT:(\d+)-->/);
+                    const total = countMatch ? countMatch[1] : '0';
+                    document.getElementById('totalCount').textContent = total + ' Total';
+
+                    // Remove the marker from HTML before inserting
+                    const cleanHtml = html.replace(/<!--TOTAL_COUNT:\d+-->/, '');
+                    document.getElementById('sectionsContainer').innerHTML = cleanHtml;
+
+                    // Re-initialize Lucide icons for new content
+                    lucide.createIcons();
+                })
+                .catch(err => {
+                    console.error('Filter error:', err);
+                    document.getElementById('sectionsContainer').innerHTML = `
+                        <div class="text-center py-12">
+                            <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <i data-lucide="alert-circle" class="w-8 h-8 text-red-400"></i>
+                            </div>
+                            <p class="text-red-500">Failed to load sections</p>
+                        </div>`;
+                    lucide.createIcons();
+                });
+        }
+
+        function resetFilters() {
+            document.getElementById('filter_search').value = '';
+            document.getElementById('filter_grade_level').value = '';
+            document.getElementById('filter_school_year').value = '';
+            document.getElementById('filter_class_day').value = '';
+            document.getElementById('filter_strand').value = '';
+            fetchSections();
+        }
+
+        // Attach event listeners to filters
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load sections on page load
+            fetchSections();
+
+            // Select filters - trigger on change
+            ['filter_grade_level', 'filter_school_year', 'filter_class_day', 'filter_strand'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.addEventListener('change', fetchSections);
+            });
+
+            // Search input - debounce 400ms
+            const searchInput = document.getElementById('filter_search');
+            if (searchInput) {
+                searchInput.addEventListener('input', function() {
+                    clearTimeout(filterTimeout);
+                    filterTimeout = setTimeout(fetchSections, 400);
+                });
+            }
+        });
 
         function toggleModal(show) {
             const modal = document.getElementById('addModal');
@@ -1497,7 +1629,7 @@ $result = mysqli_query($conn, $query);
                          onclick="toggleStudentCard(${student.id})">
                         <div class="flex items-center gap-4">
                             <!-- Avatar -->
-                            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center text-white font-bold text-sm shadow">
+                            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white font-bold text-sm shadow">
                                 ${initials}
                             </div>
                             <!-- Basic Info -->
@@ -1706,6 +1838,9 @@ $result = mysqli_query($conn, $query);
 
             // Activate selected tab
             if (tab === 'list') {
+                document.getElementById("tabManual").innerHTML =
+                    '<i data-lucide="user-plus" class="w-4 h-4"></i> Mannualy Students';
+                resetStudentForm();
                 tabList.classList.remove('text-slate-500', 'border-transparent');
                 tabList.classList.add('text-blue-600', 'border-blue-600', 'bg-blue-50/50');
                 listSection.classList.remove('hidden');
@@ -1715,6 +1850,9 @@ $result = mysqli_query($conn, $query);
                 tabManual.classList.add('text-blue-600', 'border-blue-600', 'bg-blue-50/50');
                 manualSection.classList.remove('hidden');
             } else if (tab === 'import') {
+                document.getElementById("tabManual").innerHTML =
+                    '<i data-lucide="user-plus" class="w-4 h-4"></i> Mannualy Students';
+                resetStudentForm();
                 tabImport.classList.remove('text-slate-500', 'border-transparent');
                 tabImport.classList.add('text-blue-600', 'border-blue-600', 'bg-blue-50/50');
                 importSection.classList.remove('hidden');
@@ -1748,6 +1886,8 @@ $result = mysqli_query($conn, $query);
          */
         function editStudent(studentId) {
             const student = allStudents.find(s => s.id == studentId);
+            document.getElementById("tabManual").innerHTML =
+                '<i data-lucide="user-plus" class="w-4 h-4"></i> Edit Students';
             if (!student) return;
 
             switchStudentTab('manual');

@@ -167,16 +167,23 @@
                         </div>
                     </div>
 
+
+                    <!-- Password -->
                     <div>
-                        <label class="block text-sm font-semibold text-slate-700 mb-3">Contact</label>
+                        <label class="block text-sm font-semibold text-slate-700 mb-3">Password</label>
                         <div class="relative">
                             <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                <i data-lucide="phone" class="w-5 h-5 text-slate-400"></i>
+                                <i data-lucide="lock" class="w-5 h-5 text-slate-400"></i>
                             </div>
-                            <input type="text" name="contact" placeholder="Contact No." required
-                                class="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 transition-all">
+                            <input type="password" name="password" id="password" placeholder="Password" required
+                                class="w-full pl-12 pr-12 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 transition-all">
+                            <button type="button" id="toggle-password" class="absolute inset-y-0 right-0 pr-4 flex items-center cursor-pointer">
+                                <i data-lucide="eye" class="w-5 h-5 text-slate-400 hover:text-slate-600 transition-colors" id="eye-icon"></i>
+                            </button>
                         </div>
                     </div>
+
+
                 </div>
 
                 <!-- Email -->
@@ -188,21 +195,6 @@
                         </div>
                         <input type="email" name="email" placeholder="Enter your email" required
                             class="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 transition-all">
-                    </div>
-                </div>
-
-                <!-- Password -->
-                <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-3">Password</label>
-                    <div class="relative">
-                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                            <i data-lucide="lock" class="w-5 h-5 text-slate-400"></i>
-                        </div>
-                        <input type="password" name="password" id="password" placeholder="Create a password" required
-                            class="w-full pl-12 pr-12 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 transition-all">
-                        <button type="button" id="toggle-password" class="absolute inset-y-0 right-0 pr-4 flex items-center cursor-pointer">
-                            <i data-lucide="eye" class="w-5 h-5 text-slate-400 hover:text-slate-600 transition-colors" id="eye-icon"></i>
-                        </button>
                     </div>
                 </div>
 
@@ -287,11 +279,10 @@
         $email = $_POST['email'];
         $password = password_hash($_POST['password'], PASSWORD_DEFAULT);
         $fullname = $_POST['fullname'];
-        $contact = $_POST['contact'];
 
-        $stmt = $conn->prepare("INSERT INTO users (username, email, password, fullname, contact) VALUES (?, ?, ?, ?, ?)");
+        $stmt = $conn->prepare("INSERT INTO users (username, email, password, fullname) VALUES (?, ?, ?, ?)");
 
-        $stmt->bind_param("sssss", $username, $email, $password, $fullname, $contact);
+        $stmt->bind_param("ssss", $username, $email, $password, $fullname);
 
         if ($stmt->execute()) {
             echo "<script>

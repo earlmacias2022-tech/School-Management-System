@@ -134,14 +134,14 @@ if (isset($_GET['action_type']) && $_GET['action_type'] === 'fetch_recommendatio
     }
 
     // Recently added students (last 7 days)
-    $recent = mysqli_query($conn, "SELECT * FROM students ORDER BY id DESC LIMIT 5");
+    $recent = mysqli_query($conn, "SELECT s.*, sec.section_name FROM students s LEFT JOIN sections sec ON s.section_id = sec.sectionID ORDER BY s.id DESC LIMIT 3");
     $recent_students = [];
     while ($row = mysqli_fetch_assoc($recent)) {
         $recent_students[] = $row;
     }
 
     // High risk students (have allergies or chronic issues noted)
-    $high_risk = mysqli_query($conn, "SELECT * FROM students WHERE allergies != '' OR chronic_issues != '' LIMIT 5");
+    $high_risk = mysqli_query($conn, "SELECT * FROM students WHERE allergies != '' OR chronic_issues != '' LIMIT 3");
     $high_risk_students = [];
     while ($row = mysqli_fetch_assoc($high_risk)) {
         $high_risk_students[] = $row;
@@ -400,11 +400,11 @@ $all_students = mysqli_query($conn, "SELECT s.*, sec.section_name FROM students 
         </div>
     </main>
 
-    <div id="addStudentsModal" class="fixed inset-0 bg-slate-900/50 z-50 hidden items-center justify-center backdrop-blur-sm p-4">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden animate-fade-in-up flex flex-col">
+    <div id="addStudentsModal" class="fixed inset-0 bg-slate-900/50 z-50 hidden items-center justify-center backdrop-blur-sm p-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] my-8 animate-fade-in-up flex flex-col overflow-hidden">
 
             <!-- Modal Header -->
-            <div class="bg-gradient-to-r  from-blue-500 to-cyan-500  p-5 text-white flex justify-between items-center flex-shrink-0">
+            <div class="bg-gradient-to-r from-blue-500 to-cyan-500 p-5 text-white flex justify-between items-center flex-shrink-0 rounded-t-2xl">
                 <h3 class="font-bold flex items-center gap-2 text-lg">
                     <i data-lucide="users" class="w-5 h-5"></i>
                     <span>Student Management</span>
@@ -417,8 +417,8 @@ $all_students = mysqli_query($conn, "SELECT s.*, sec.section_name FROM students 
                      MANUAL ADD/EDIT STUDENT FORM
                      Full student profile with all fields
                      ============================================================ -->
-            <div id="manualAddSection" class="flex ">
-                <form method="POST" id="manualStudentForm" class="space-y-6">
+            <div id="manualAddSection" class="flex-1 overflow-y-auto">
+                <form method="POST" id="manualStudentForm" class="space-y-6 p-6">
                     <input type="hidden" name="action_type" id="form_action_type" value="add_student">
                     <input type="hidden" name="edit_student_id" id="edit_student_id">
 
@@ -472,12 +472,12 @@ $all_students = mysqli_query($conn, "SELECT s.*, sec.section_name FROM students 
                                     <select name="grade_level" id="grade_level"
                                         class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all cursor-pointer">
                                         <option value="">Select Grade</option>
-                                        <option value="7">Grade 7</option>
-                                        <option value="8">Grade 8</option>
-                                        <option value="9">Grade 9</option>
-                                        <option value="10">Grade 10</option>
-                                        <option value="11">Grade 11</option>
-                                        <option value="12">Grade 12</option>
+                                        <option value="Grade 7">Grade 7</option>
+                                        <option value="Grade 8">Grade 8</option>
+                                        <option value="Grade 9">Grade 9</option>
+                                        <option value="Grade 10">Grade 10</option>
+                                        <option value="Grade 11">Grade 11</option>
+                                        <option value="Grade 12">Grade 12</option>
                                     </select>
                                 </div>
                                 <div>
@@ -590,19 +590,21 @@ $all_students = mysqli_query($conn, "SELECT s.*, sec.section_name FROM students 
                             </h4>
                         </div>
                         <div class="p-4 space-y-4">
-                            <div>
-                                <label class="text-sm font-semibold text-slate-700 mb-2 block">Previous School</label>
-                                <input type="text" name="previous_school" id="previous_school"
-                                    placeholder="Name of previously enrolled school"
-                                    class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all">
-                            </div>
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="text-sm font-semibold text-slate-700 mb-2 block">Previous School</label>
+                                    <input type="text" name="previous_school" id="previous_school"
+                                        placeholder="Name of previously enrolled school"
+                                        class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all">
+                                </div>
+
                                 <div>
                                     <label class="text-sm font-semibold text-slate-700 mb-2 block">Academic Interests</label>
                                     <input type="text" name="interests" id="interests"
                                         placeholder="Favorite subjects or areas of interest"
                                         class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all">
                                 </div>
+
                             </div>
                         </div>
                     </div>
@@ -751,7 +753,7 @@ $all_students = mysqli_query($conn, "SELECT s.*, sec.section_name FROM students 
                                     ${s.section_name || 'Unassigned'}
                                 </span>
                             </td>
-                            <td class="px-6 py-4 text-sm text-slate-600">${s.grade_level ? 'Grade ' + s.grade_level : '-'}</td>
+                            <td class="px-6 py-4 text-sm text-slate-600">${s.grade_level || '-'}</td>
                             <td class="px-6 py-4 text-sm text-slate-600">${s.gender || '-'}</td>
                             <td class="px-6 py-4">
                                 <p class="text-sm text-slate-600">${s.phone || '-'}</p>
@@ -801,13 +803,17 @@ $all_students = mysqli_query($conn, "SELECT s.*, sec.section_name FROM students 
                     document.getElementById('gender').value = s.gender || '';
                     document.getElementById('student_id').value = s.student_id || '';
                     document.getElementById('grade_level').value = s.grade_level || '';
-                    document.getElementById('section_id_select').value = s.section_id || '';
+                    document.getElementById('section_id_select').value = s.section_id != null ? String(s.section_id) : '';
                     document.getElementById('address').value = s.address || '';
                     document.getElementById('phone').value = s.phone || '';
                     document.getElementById('email').value = s.email || '';
                     document.getElementById('parent_contacts').value = s.parent_contacts || '';
                     document.getElementById('emergency_contacts').value = s.emergency_contacts || '';
                     document.getElementById('allergies').value = s.allergies || '';
+                    document.getElementById('chronic_issues').value = s.chronic_issues || '';
+                    document.getElementById('dietary_restrictions').value = s.dietary_restrictions || '';
+                    document.getElementById('previous_school').value = s.previous_school || '';
+                    document.getElementById('interests').value = s.interests || '';
                     document.getElementById('formSubmitBtn').innerHTML = '<i data-lucide="save" class="w-4 h-4"></i><span>Update Student</span>';
                     lucide.createIcons();
                     document.getElementById('addStudentsModal').classList.remove('hidden');

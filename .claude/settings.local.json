@@ -1,7 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(mysql -u root -e \"DESCRIBE attendance_system.students;\")"
-    ]
-  }
-}
